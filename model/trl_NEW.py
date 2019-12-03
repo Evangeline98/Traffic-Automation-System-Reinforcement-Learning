@@ -30,7 +30,7 @@ class Traffic:
         In this function we initialize our state space
 
         :return:
-            self.Y  ##注意了，y只是每个路口在等待的车的数量，还需要转换为前往了某个方向。
+            self.Y  
         '''
 
         self.incomerate = np.array([[0.009907, 0.015428, 0.012338, 0.011991], [0.008565, 0.002199, 0.009387, 0.009421],
@@ -75,17 +75,17 @@ class Traffic:
     def compute_reward(self, Y, Z_out, Z_in):
         '''
         In this function, we compute the reward function, based on the current Y
-        for a in range(3):  # 第一个路口的3个相位
-             for b in range(3):  # 第二个路口的3个相位
-                for c in range(3):  # 三一个路口的3个相位
-                    for d in range(3):  # 第四个路口的3个相位
+        for a in range(3):  # first intersection
+             for b in range(3):  # second intersection
+                for c in range(3):  # third intersection
+                    for d in range(3):  # fourth intersection
                         self.A[0][a] = 1
                         self.A[1][b] = 1
                         self.A[2][c] = 1
                         self.A[3][d] = 1
-                        for i in range(4):  # 对每个crossroad 从左边的entry开始是entry1 1234
+                        for i in range(4):  
                             if self.A[i][0] == 1:
-                                # strategy矩阵的第i行第1列==1 表示第i个crossroad采取 第1种相位
+
                                 # outgoing cars= delta t(1s) * Vij / physical length of a car(3m)
 
                                 self.Z[i][1] = self.dt * self.V[i][0][1] / self.car_len  # crossroad i  entry 1 to 2
@@ -105,11 +105,11 @@ class Traffic:
         '''
         Reward1 = np.exp(-np.sum(np.square(Y)))
         Reward2 = np.sum(Z_out)
-        # 如果有超过20辆车，加penalty
+        # if exceeding 20 cars, add penalty
         Penalty1 = self.alpha * sum(sum(self.Y > 20)) / 16
         Penalty2 = np.sum(Z_in)
 
-        # 如果重复决策 pentalty
+        # if repetitive strategy, add penalty
         reward = Reward1 + Reward2 - Penalty1 - Penalty2
         return reward
 
@@ -137,9 +137,8 @@ class Traffic:
         self.best_strategy = self.strategy_space[np.argmax(self.Q)]
 
         '''
-        找到Q里面的最大的值对应的index_max(idm)  （最优策略在第81个strategy中位于第idm个）
-        然后把idm这个index转化成strategy矩阵 self.best_strategy
-        cross1 = idm // 27  # cross1表示第1个crossroad选择的相位是第cross1个相位（cross1可能为0，1，2）
+
+        cross1 = idm // 27  
         cross2 = (idm - cross1 * 27) // 9
         cross3 = (idm - cross1 * 27 - cross2 * 9) // 3
         cross4 = idm - cross1 * 27 - cross2 * 9 - cross3 * 3
@@ -179,10 +178,9 @@ class Traffic:
             if strategy[i][0] == 1:
 
                 '''
-                strategy矩阵的第i行第1列==1 表示第i个crossroad采取 第1种相位  
+                strategy matrix first element ==1: first intersection takes the first phase  
                 outgoing cars= delta t(1s) * Vij / physical length of a car(3m)
                 
-                为了清晰，我写一个，剩下的并在一起了 --Klaus
                 '''
                 # For A1 to A2
                 max_number_of_cars_to_go = int(self.dt * (self.V[i + 1][0][1] + self.V[i + 1][0][3]) / self.car_len)
@@ -196,7 +194,6 @@ class Traffic:
                 Z_out[i][3] = min(int(self.dt * self.V[i + 1][3][2] / self.car_len), detail_Y[i, 3, 2])
 
             elif strategy[i][1] == 1:
-                # 换成 elif 因为只有可能有一种状态发生。 --klaus
 
                 Z_out[i][0] = min(int(self.dt * (self.V[i + 1][0][2] + self.V[i + 1][0][3]) / self.car_len),
                                   detail_Y[i, 0, 2] + detail_Y[i, 0, 3])
@@ -223,17 +220,17 @@ class Traffic:
 
         Z_in = np.zeros((4, 4))
         Z_detail = Y2detailY(Z_out, self.P)
-        # A3 的车全部来自于 B 中到路口1的车流
+        # A3 : B to intersection 1
         Z_in[0, 2] = np.sum(Z_detail[1, :, 0])
-        # B1 的车全部来自 A3
+        # B1: A3
         Z_in[1, 0] = np.sum(Z_detail[0, :, 2])
-        # B3 的车全部来自 C1
+        # B3: C1
         Z_in[1, 2] = np.sum(Z_detail[2, :, 0])
-        # B4 的车全部来自 D2
+        # B4: D2
         Z_in[1, 3] = np.sum(Z_detail[3, :, 1])
-        # C1 的车全部来自 B3
+        #C1: D3
         Z_in[2, 0] = np.sum(Z_detail[1, :, 2])
-        # D2 的车全部来自 B4
+        # D2: B4
         Z_in[3, 1] = np.sum(Z_detail[1, :, 3])
         Z_in = Z_in.astype(np.int)
 
